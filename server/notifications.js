@@ -15,6 +15,8 @@ const notificationMessages = {
     "login_missing" : "Vous devez saisir un pseudo et un mot de passe pour vous connecter.",
     "logout_success" : "Vous êtes déconnecté/ A bientôt !",
     "max_connection_reached": "Le nombre maximum de connexions à la base de données a été atteint",
+    "modifyuser_success" : "Les données on été modifiées avec succès",
+    "modifyuser_fail" : "Les données n'ont pas pu être modifées",
     "password_bad_format" : "Attention, le mot de passe doit contenir ces caractères [0-9], [A-Z], [a-z] et !@#$%^&*()_+{}|:;<>,.?~[-]",
     "password_failure" : "Le mot de passe n'est pas bon",
     "password_verification_failed" : "La vérification du mot de passe a échoué",
@@ -26,6 +28,8 @@ const notificationMessages = {
     "signout_failure" : "Le pseudo ou le mail n'existe pas",
     "request_success" : "La requête a été effectuée avec succès",
     "invalid_action" : "Aucune action n'a été validée .... y'a une couille dans l'pâté !",
+    "invalid_id" : "Aucun id n'est valide",
+    "unknown_id" : "identifiant inconnu",
     "token_missing" : "Une erreur est survenue avec le token",
     "token_failure" : "Une erreur est survenue avec le token",
 };

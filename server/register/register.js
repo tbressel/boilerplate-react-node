@@ -31,7 +31,8 @@ const mysql = require('mysql');
 const cors = require('cors');
 const corsOptions = {
     origin: CLIENT_BASE_URL,
-    optionsSuccessStatus: 200
+    optionsSuccessStatus: 200,
+    credentials : true
 };
 
 // Dotenv library used for environment variables
