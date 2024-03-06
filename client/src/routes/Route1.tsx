@@ -1,7 +1,7 @@
 const Route1 = () => {
     return (
         <>
-        <h3>Route1.tsx</h3>
+            <h3>Route1.tsx</h3>
         </>
     )
 }
