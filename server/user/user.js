@@ -9,8 +9,7 @@ const { CLIENT_BASE_URL } = require('../config.js');
 const { notificationMessages } = require('../notifications.js');
 
 // Import the function to get a JSON response
-const { getJsonResponse, authToken } = require('../functions.js');
-
+const { getJsonResponse, authToken, isAdmin } = require('../functions.js');
 
 
 ///////////////////////////////////////////////////////
@@ -45,9 +44,19 @@ const validator = require('validator');
 // Bcrypt library used for password encryption
 const bcrypt = require('bcrypt');
 
-// Used to generate a token
-const jwt = require('jsonwebtoken');
+//multer (to record files on the server)
+const multer = require('multer');
+const path = require('path');
 
+// multer configuration
+const storage = multer.diskStorage({
+  destination: 'files/',
+  filename: function(req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage: storage });
 
 ////////////////////////////////////////////////////////////
 /////////////////     DATABASE SETTING     /////////////////
@@ -61,7 +70,7 @@ const dbconnect = mysql.createPool({
     password: process.env.DB_PASS,
     database: process.env.DB_DATA,
     port: process.env.DB_PORT
-});
+}); 
 
 ////////////////////////////////////////////////////////////
 //////////////     MIDDLEWARES  SETTING     ////////////////
@@ -83,7 +92,7 @@ app.use(cors(corsOptions));
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-app.get('/list', authToken, (req, res) => {
+app.get('/list', authToken, isAdmin, (req, res) => {
 
     const action = req.query.action;
 
@@ -108,7 +117,7 @@ app.get('/list', authToken, (req, res) => {
             return;
         } else {
             //  If not then prepare and execute the SQL query
-            const sql = 'SELECT id, user_firstname, user_lastname, user_pseudo, user_email FROM user';
+            const sql = 'SELECT id, user_firstname, user_lastname, user_pseudo, user_email, user_avatar FROM user';
             connection.query(sql, (error, results) => {
 
                 if (error) {
@@ -127,10 +136,16 @@ app.get('/list', authToken, (req, res) => {
 //////////////////////////    ADD USERS    //////////////////////////
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
-app.post('/adduser', authToken, (req, res) => {
+app.post('/adduser', authToken, isAdmin, upload.single('avatar_file'), (req, res) => {
+     console.log('Received file:', req.file);
 
     // read the data from the POST request
     let { lastname, firstname, nickname, email, password, role } = req.body;
+
+    // get file from multer option and define de file name
+    let avatar = req.file ? req.file.filename : 'avatar-default'; 
+
+    // get the action name from the query
     let action = req.query.action;
 
     // Check if the action is valid
@@ -138,8 +153,8 @@ app.post('/adduser', authToken, (req, res) => {
         getJsonResponse(null, res, 400, false, 'invalid_action', notificationMessages, false, results = null);
         return;
     }
-    // CHeck if the data is missing
-    if (!firstname || !lastname || !nickname || !email || !password || !role) {
+    // CHeck if the data is missing (some are not requiered so not present in the condition)
+    if (!nickname || !email || !password || !role) {
         getJsonResponse(null, res, 400, false, 'data_missing', notificationMessages, false, results = null);
         return;
     }
@@ -185,8 +200,8 @@ app.post('/adduser', authToken, (req, res) => {
         } else {
             password = hash;
 
-            // assuring the the avatar is lowercased
-            const avatar = (firstname + lastname + nickname).toLowerCase();
+            // // METHODE USED WITHOUT MULTER : assuring the the avatar is lowercased
+            // const avatar = (firstname + lastname + nickname).toLowerCase();
 
             //  Get a database connection from the pool
             dbconnect.getConnection((error, connection) => {
@@ -253,7 +268,7 @@ app.post('/adduser', authToken, (req, res) => {
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
 
-app.delete('/deleteuser/:id', authToken, (req, res) => {
+app.delete('/deleteuser/:id', authToken, isAdmin, (req, res) => {
 
     // get the action in the query
     const action = req.query.action;
@@ -342,10 +357,21 @@ app.delete('/deleteuser/:id', authToken, (req, res) => {
 //////////////////////////    MODIFY USER    ////////////////////////
 /////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////
-app.put('/modifyuser/:id', authToken, (req, res) => {
+app.put('/modifyuser/:id', authToken, isAdmin, upload.single('new_avatar_file'), (req, res) => {
 
     // read the new datas from the POST request
     let { new_lastname, new_firstname, new_nickname, new_email, new_password, new_role, new_statement } = req.body;
+
+        // cheking if user insert a new file in the form
+        if (!req.file || !req.file.filename) {
+            var new_file_included = false;
+        } else {
+            var new_file_included = true;
+        }
+        
+        // get file from multer option and define de file name
+        let new_avatar = req.file ? req.file.filename : 'avatar-default'; 
+        
 
     // get the action in the query
     const action = req.query.action;
@@ -409,8 +435,8 @@ app.put('/modifyuser/:id', authToken, (req, res) => {
         } else {
             new_password = hash;
 
-            // assuring the the avatar is lowercased
-            const avatar = (new_firstname + new_lastname + new_nickname).toLowerCase();
+            // // assuring the the avatar is lowercased
+            // const avatar = (new_firstname + new_lastname + new_nickname).toLowerCase();
 
             //  Get a database connection from the pool
             dbconnect.getConnection((error, connection) => {
@@ -460,10 +486,21 @@ app.put('/modifyuser/:id', authToken, (req, res) => {
                             }
 
                             // Not any errors ? unique datas don't exists at other users ... then prepare and execute the SQL query
-                            const sql = "UPDATE user SET user_firstname = ?, user_lastname = ?, user_pseudo = ?, user_role = ?, user_email = ?, user_password = ?, user_role_name = ?, statement = ? WHERE id = ?";
 
+                            // choose the request depending if a new avatard is sent
+                            const sql = new_file_included ?  "UPDATE user SET user_firstname = ?, user_lastname = ?, user_pseudo = ?, user_role = ?, user_email = ?, user_avatar = ?, user_role_name = ?, statement = ? WHERE id = ?" :
+                            "UPDATE user SET user_firstname = ?, user_lastname = ?, user_pseudo = ?, user_role = ?, user_email = ?, user_role_name = ?, statement = ? WHERE id = ?";
+                            
+                            console.log("Requête SQL : ", sql)
+                            // const sql = "UPDATE user SET user_firstname = ?, user_lastname = ?, user_pseudo = ?, user_role = ?, user_email = ?, user_password = ?, user_avatar = ?, user_role_name = ?, statement = ? WHERE id = ?";
+
+                            const sqlValues = new_file_included ? [new_firstname, new_lastname, new_nickname, new_role, new_email, new_avatar, new_role_name, new_statement, id] : 
+                            [new_firstname, new_lastname, new_nickname, new_role, new_email, new_role_name, new_statement, id]
+
+                            console.log("Values choisit pour la requete SQL : ", sqlValues)
                             // execute the query
-                            dbconnect.query(sql, [new_firstname, new_lastname, new_nickname, new_role, new_email, new_password, new_role_name, new_statement, id], (error) => {
+                            dbconnect.query(sql, sqlValues, (error) => {
+                            // dbconnect.query(sql, [new_firstname, new_lastname, new_nickname, new_role, new_email, new_password, new_avatar, new_role_name, new_statement, id], (error) => {
 
                                 // If there is a database request error
                                 if (error) {

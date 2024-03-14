@@ -218,7 +218,7 @@ app.post('/login/', (req, res) => {
                                             lastname: results[0].user_lastname,
                                             pseudo: results[0].user_pseudo,
                                             email: results[0].user_email,
-                                            status: results[0].user_role,
+                                            // status: results[0].user_role,
                                             status_name: results[0].user_role_name,
                                             avatar: results[0].user_avatar,
                                         },
@@ -231,7 +231,8 @@ app.post('/login/', (req, res) => {
                                     userSession[0].lastname = results[0].user_lastname;
                                     userSession[0].pseudo = results[0].user_pseudo;
                                     userSession[0].email = results[0].user_email;
-                                    userSession[0].status = results[0].user_role;
+                                    // userSession[0].status = results[0].user_role;
+                                    userSession[0].avatar = results[0].user_avatar;
                                     userSession[0].sessionToken = sessionToken;
 
                                     // Send the response to the client with the token inside results

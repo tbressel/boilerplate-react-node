@@ -21,15 +21,15 @@ app.listen(port, () => {
 
 
 // Configuring the routes
+
+// Route about users connexion features : login, logout, signin, signout, account activation 
 const Route1 = require('./register/register.js'); 
 app.use('/register', Route1); 
 
+// Route about add, list, modify and delete users (only for an admin backoffice)
 const Route2 = require('./user/user.js'); 
 app.use('/user', Route2); 
 
 const Route3 = require('./route3/route3.js'); 
 app.use('/route3', Route3); 
-
-const Route_Test = require('./test/test.js'); 
-app.use('/test', Route_Test); 
 

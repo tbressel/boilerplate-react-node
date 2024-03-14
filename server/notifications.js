@@ -32,6 +32,8 @@ const notificationMessages = {
     "unknown_id" : "identifiant inconnu",
     "token_missing" : "Une erreur est survenue avec le token",
     "token_failure" : "Une erreur est survenue avec le token",
+    "not_admin" : "Vous n'avez pas suffisement de droit pour accéder à ce contenu.",
+    "is_admin" : "Vous etes l'administrateur. Accès autorisé"
 };
 
 module.exports = { notificationMessages };
