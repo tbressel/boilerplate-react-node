@@ -1,47 +1,45 @@
-# Titre de NIveau 1
+# Boilerplate REACT JS / NODE JS
 
 -------
 
-## Titre de niveau 2
+Cette base d'application est développer pour la préparation de différents projets pouvant utiliser les mêmes fonctions de base. Elle n'inclue donc aucune logique métier.
+
+
+## FRONT-END
 
 --------------------------
 
-__Mettre en gras du texte__
+__Dossier ./client__
+
+Application React JS / Typescript et Styled Components.
+
+* __npm run start__ : démarrer la partie front de l'application en local.
+* __npm run build__ : compiler le front end dans un dossier __./client/build__
 
 
-*Mettre en italique*
+## BACK-END
 
-Je tape du texte et je voudrais  
-revenir à la ligne.
+--------------------------
 
-Faire une liste à puce
-* élément 1 
-* élément 2
-* élément 3 
-* élément 4
+__1. API Rest__
 
-Faire une liste ordronnée
-1. élement 1
-2. élement 2
-3. élement 3
-4. élement 4
+__Dossier ./server__
 
+Serveur Node JS / Express / Typescript
 
-Imbrication de puce
-* élément 1
-  * sous-élement 1
-  * sous-élement 2
+* __npm run dev__ : démarrer le serveur en local
 
-Faire une citation
-> ceci est une citation
+__2. Base de données__
 
-Afficher un bout de code
-`le bout de code`
+__Dossier ./database__
 
-Mettre un liens dans le readme.md
-Mon bog [e-monsite](https://www.mon-site)
+Base de donnée mySQL
 
-Mettre une image, un logo
-![logo e-monsite](https://www.mon-site/mon.image.png)
+Un fichier SQL est archivé permettant d'être importé dans phpmyadmin, pour développer en local,  
+ainsi que la présence de fichier Lopping correspondant au MCD de la basse de données
 
+Base de donnée Redis
+
+Le code à été pour le comment désactivé/commenté suite à l'annonce du changement de license de Redis.  
+A voir si je vais prolonger son utilisation ou si je vais switcher vers Redict, la version open source de Redis.
 
