@@ -33,7 +33,10 @@ const notificationMessages = {
     "token_missing" : "Une erreur est survenue avec le token",
     "token_failure" : "Une erreur est survenue avec le token",
     "not_admin" : "Vous n'avez pas suffisement de droit pour accéder à ce contenu.",
-    "is_admin" : "Vous etes l'administrateur. Accès autorisé"
+    "is_admin" : "Vous etes l'administrateur. Accès autorisé",
+    "test_token_failure" : "le token est pas bon",
+    "test_refresh_failure" : "le refresh token est pas bon",
+    "test_newtoken_failure" : "le new token est pas bon"
 };
 
 module.exports = { notificationMessages };

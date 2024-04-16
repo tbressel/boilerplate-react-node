@@ -169,7 +169,7 @@ app.post('/login/', (req, res) => {
         } else {
 
             //  If not then prepare and execute the SQL query
-            const sql = 'SELECT * FROM user WHERE user_pseudo = ?';
+            const sql = 'SELECT * FROM user_ WHERE user_nickname = ?';
             connection.query(sql, [username], (error, results) => {
 
                 // If there is a database request error
@@ -210,6 +210,9 @@ app.post('/login/', (req, res) => {
                                     // Then get the Secret key for the token
                                     const secretKey = process.env.JWT_SECRET_KEY;
 
+                                    // Then get the Secret key for the token
+                                    const refreshSecretKey = process.env.JWT_REFRESH_SECRET_KEY;
+
                                     // Generate a token with user information and the secret key
                                     const sessionToken = jwt.sign(
                                         {
@@ -225,6 +228,22 @@ app.post('/login/', (req, res) => {
                                         secretKey,
                                         { expiresIn: '1h' });
 
+                                    // Generate a refreshtoken
+                                    const refreshToken = jwt.sign(
+                                        {
+                                            id: results[0].id,
+                                            firstname: results[0].user_firstname,
+                                            lastname: results[0].user_lastname,
+                                            pseudo: results[0].user_pseudo,
+                                            email: results[0].user_email,
+                                            // status: results[0].user_role,
+                                            status_name: results[0].user_role_name,
+                                            avatar: results[0].user_avatar,
+                                        },
+                                        refreshSecretKey,
+                                        {  expiresIn: '2h' });
+
+
                                     // Add the token to the user information
                                     let userSession = [{}];
                                     userSession[0].firstname = results[0].user_firstname;
@@ -234,6 +253,7 @@ app.post('/login/', (req, res) => {
                                     // userSession[0].status = results[0].user_role;
                                     userSession[0].avatar = results[0].user_avatar;
                                     userSession[0].sessionToken = sessionToken;
+                                    userSession[0].refreshToken = refreshToken;
 
                                     // Send the response to the client with the token inside results
                                     getJsonResponse(connection, res, 200, true, 'login_success', notificationMessages, false, userSession);
@@ -301,6 +321,8 @@ app.post('/signin', (req, res) => {
 
     }
 
+    console.log("Je reçois les information dela requete",firstname, lastname, nickname, email, password, role, role_name)
+
     // check if the email is valid with the validator method
     if (!validator.isEmail(email)) {
         getJsonResponse(null, res, 401, true, 'email_bad_format', notificationMessages, false, results = null);
@@ -320,16 +342,25 @@ app.post('/signin', (req, res) => {
             return;
         } else {
             password = hash;
+            console.log("Le password haché est : ",password);
 
             // assuring the the avatar is lowercased
             const avatar = (firstname + lastname + nickname).toLowerCase();
-
+            
+            console.log("l'avatar est : ",avatar);
+            
             //  Get a database connection from the pool
             dbconnect.getConnection((error, connection) => {
-
+                
+                
                 // Testing if max connection is reached
+                
+                
+                console.log("nombre de connexion = ",dbconnect._allConnections.length)
                 // if (dbconnect.config.connectionLimit) {
                 if (dbconnect._allConnections.length >= dbconnect.config.connectionLimit) {
+                    
+                    console.log("trop de connexion")
                     getJsonResponse(connection, res, 503, false, 'max_connection_reached', notificationMessages, false, results = null);
                     return;
                 }
@@ -340,29 +371,30 @@ app.post('/signin', (req, res) => {
                     getJsonResponse(connection, res, 500, false, 'dbconnect_error', notificationMessages, false, results = null);
                     return;
                 }
-
-
+                
+                
                 // If not then prepare and execute the SQL query to check if this user already exists
-                const checkSql = 'SELECT * FROM user WHERE user_pseudo = ? OR user_email = ?';
-
+                const checkSql = 'SELECT * FROM user_ WHERE user_nickname = ? OR user_email = ?';
+                
                 // execute the query
                 dbconnect.query(checkSql, [nickname, email], (error, results) => {
-
+                    
                     // if there is a database request error
                     if (error) {
                         getJsonResponse(connection, res, 500, false, 'request_error', notificationMessages, false, results = null);
                         return;
-
+                        
                     } else if (results.length > 0) {
                         // if the user already exists
                         getJsonResponse(connection, res, 401, false, 'exist_data', notificationMessages, false, results = null);
                         return;
                     }
-
-
+                    
+                    
+                    
                     // Then get the Secret key for the token
                     const secretKey = process.env.JWT_SECRET_KEY;
-
+                    
                     // Generate a token with user information and the secret key
                     const sessionToken = jwt.sign({
                         firstname: firstname,
@@ -370,23 +402,32 @@ app.post('/signin', (req, res) => {
                         nickname: nickname,
                         email: email,
                     },
-                        secretKey,
-                        { expiresIn: '1h' });
+                    secretKey,
+                    { expiresIn: '1h' });
 
                     const activationEmail = email;
-                    const activationLink = 'http://localhost:4000/register/activation?action=activate&token=' + sessionToken;
-
-
+                    const activationLink = 'http://localhost:5000/register/activation?action=activate&token=' + sessionToken;
+                    
+                    
                     sendActivationEmail(activationEmail, activationLink)
+                    
                         .then(() => {
 
                             //  If not then prepare and execute the SQL query
-                            const sql = `INSERT INTO user (user_firstname, user_lastname,  user_pseudo, user_role, user_email, user_password, user_avatar, user_role_name, statement) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)`;
+                            const sql = `INSERT INTO user_ (user_firstname, user_lastname, user_nickname, user_role, user_email, user_password, user_avatar, user_role_name, user_isActivated) VALUES (?, ?, ?, ?, ?, ?, ?, ?,?)`;
 
                             // execute the query
                             dbconnect.query(sql, [firstname, lastname, nickname, role, email, password, avatar, role_name, statement], (error) => {
-
+                                
+                                
+                                //
+                                //
+                                //
                                 // If there is a database request error
+                                //
+                                // !!!!!!!!!!!! TO FIX : if an error is returned, there is a probleme with de free of connection pool : server crashes ! 
+                                //
+                                //
                                 if (error) {
                                     getJsonResponse(connection, res, 500, false, 'request_error', notificationMessages, false, results = null);
                                     return;
@@ -465,7 +506,7 @@ app.patch('/activation', (req, res) => {
 
 
         // If not then prepare and execute the SQL query to check if this user already exists
-        const sql = 'UPDATE user SET statement = 1 WHERE user_pseudo = ? AND user_email = ?';
+        const sql = 'UPDATE user_ SET user_isActivated = 1 WHERE user_nickname = ? AND user_email = ?';
 
 
         // execute the query
@@ -532,7 +573,7 @@ app.delete('/signout', authToken, (req, res) => {
             return;
         }
         // If not then prepare and execute the SQL query to check if this user already exists
-        const sql = 'DELETE FROM user WHERE user_pseudo = ? AND user_email = ?';
+        const sql = 'DELETE FROM user_ WHERE user_nickname = ? AND user_email = ?';
         
         // execute the query
         dbconnect.query(sql, [nickname, email], (error, results) => {
@@ -552,6 +593,46 @@ app.delete('/signout', authToken, (req, res) => {
     });
 });
 
+
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+//////////////////////     REFRESH TOKEN      ///////////////////////
+/////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+app.post('/refreshtoken', (req, res) => {
+    // Get the refresh key sent by the client
+    const refreshToken = req.body.refreshToken; 
+
+    // Then get the Secret key for the token
+    const secretKey = process.env.JWT_SECRET_KEY;
+
+    // And get the secret refresh key
+    const refreshSecretKey = process.env.JWT_REFRESH_SECRET_KEY;
+
+    // Check if refreshtoken sent by client is OK with the secret refresh key
+    jwt.verify(refreshToken, refreshSecretKey, (error, decoded) => {
+        if (error) {
+            return res.status(401).json({ message: "Refresh token invalide" });
+        } else {
+            // Re generate a Token with the usual secret key
+            const newToken = jwt.sign(
+                {
+                    id: decoded.id,
+                    firstname: decoded.firstname,
+                    lastname: decoded.lastname,
+                    email: decoded.email,
+                    status_name: decoded.status_name,
+                    avatar: decoded.avatar,
+                },
+                secretKey,
+                { expiresIn: '1h' }
+            );
+
+            res.status(200).json({ 'New Token': newToken });
+        }
+    });
+
+  });
 
 
 module.exports = app;

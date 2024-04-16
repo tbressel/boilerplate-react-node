@@ -30,6 +30,6 @@ app.use('/register', Route1);
 const Route2 = require('./user/user.js'); 
 app.use('/user', Route2); 
 
-const Route3 = require('./route3/route3.js'); 
-app.use('/route3', Route3); 
+const Route3 = require('./test/test.js'); 
+app.use('/test', Route3); 
 

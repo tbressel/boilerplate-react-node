@@ -13,14 +13,14 @@ dotenv.config();
 
 const jwt = require('jsonwebtoken');
 
-const redis = require('redis');
+// const redis = require('redis');
 
-// Créer une instance du client Redis
-const redisClient = redis.createClient({
-    // Spécifiez les informations de connexion à Redis si nécessaire
-    // host: 'localhost',
-    // port: 6379,
-});
+// // Créer une instance du client Redis
+// const redisClient = redis.createClient({
+//     // Spécifiez les informations de connexion à Redis si nécessaire
+//     // host: 'localhost',
+//      port: 6380,
+// });
 
 ////////////////////////////////////////////////////////////
 /////////////////     DATABASE SETTING     /////////////////
@@ -94,23 +94,26 @@ function authToken(req, res, next) {
         // if it's a wrond token then return an error
         if (error) {
 
-            // then chek  if it's an expired token 
-            if (error.name === 'TokenExpiredError') {
+    // Old redis fonction code
+            // // then chek  if it's an expired token 
+            // if (error.name === 'TokenExpiredError') {
 
-                // add the expired token to Redis database
-                redisClient.set(token, 'expired', 'EX', 3600, (error) => {
+            //     // add the expired token to Redis database
+            //     redisClient.set(token, 'expired', 'EX', 3600, (error) => {
 
-                    // is there an error during the add of this tocken ?
-                    if (error) {
-                        console.error('Erreur lors de l\'ajout du token expiré à Redis :', error);
-                    } else {
-                        console.log('Token expiré ajouté à Redis :', token);
-                    }
-                });
-            }
+            //         // is there an error during the add of this tocken ?
+            //         if (error) {
+            //             console.error('Erreur lors de l\'ajout du token expiré à Redis :', error);
+            //         } else {
+            //             console.log('Token expiré ajouté à Redis :', token);
+            //         }
+            //     });
+            // }
+
             getJsonResponse(null, res, 403, false, 'token_failure', notificationMessages, false, results = null);
             return;
         }
+
 
         // Add the results to the request object
         req.results = results;
@@ -131,7 +134,7 @@ function authToken(req, res, next) {
  * @param {*} next 
  */
 function isAdmin(req, res, next) {
-
+    // console.log("on est en isadmin")
     //  Get the token from the header juste after authorization keyword
     const header = req.headers['authorization'];
 
@@ -170,7 +173,7 @@ function isAdmin(req, res, next) {
             } else {
 
                 // if not the prepare and execute the query to get the user_role
-                const sql = 'SELECT user_role FROM user WHERE id = ?';
+                const sql = 'SELECT user_role FROM user_ WHERE id = ?';
                 connection.query(sql, [userId], (error, results) => {
                     
                     if (error) {
@@ -192,6 +195,24 @@ function isAdmin(req, res, next) {
         })
     })
 };
+
+
+
+function decodeToken(token, secretKey) {
+    try {
+        // Vérifier et décoder le token en utilisant la clé secrète
+        const decoded = jwt.verify(token, secretKey);
+        // Retourner les informations de l'utilisateur décryptées depuis le token
+        return decoded;
+    } catch (error) {
+        // En cas d'erreur lors du décodage du token (ex: token invalide ou expiré), retourner null ou gérer l'erreur selon les besoins
+        console.error('Erreur lors du décodage du token :', error.message);
+        return null;
+    }
+}
+
+
+
 
 
 

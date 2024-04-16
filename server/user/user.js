@@ -72,6 +72,8 @@ const dbconnect = mysql.createPool({
     port: process.env.DB_PORT
 }); 
 
+
+
 ////////////////////////////////////////////////////////////
 //////////////     MIDDLEWARES  SETTING     ////////////////
 ////////////////////////////////////////////////////////////
@@ -95,7 +97,7 @@ app.use(cors(corsOptions));
 app.get('/list', authToken, isAdmin, (req, res) => {
 
     const action = req.query.action;
-
+    
     // Check if the action is valid
     if (!action || action !== 'list') {
         getJsonResponse(null, res, 400, false, 'invalid_action', notificationMessages, false, results = null);
@@ -107,19 +109,21 @@ app.get('/list', authToken, isAdmin, (req, res) => {
 
         // Testing if max connection is reached
         if (dbconnect._allConnections.length >= dbconnect.config.connectionLimit) {
+
             getJsonResponse(connection, res, 503, false, 'max_connection_reached', notificationMessages, false, results = null);
             return;
         }
-
+       
+        
         // Testing if there is a database connection error
         if (error) {
             getJsonResponse(connection, res, 500, false, 'dbconnect_error', notificationMessages, false, results = null);
             return;
         } else {
             //  If not then prepare and execute the SQL query
-            const sql = 'SELECT id, user_firstname, user_lastname, user_pseudo, user_email, user_avatar FROM user';
+            const sql = 'SELECT id, user_lastname, user_firstname, user_nickname, user_email, user_avatar FROM user_';
             connection.query(sql, (error, results) => {
-
+                
                 if (error) {
                     getJsonResponse(connection, res, 500, false, 'request_error', notificationMessages, false, results = null);
                     return;
@@ -222,7 +226,7 @@ app.post('/adduser', authToken, isAdmin, upload.single('avatar_file'), (req, res
 
 
                 // If not then prepare and execute the SQL query to check if this user already exists
-                const checkSql = 'SELECT * FROM user WHERE user_pseudo = ? OR user_email = ?';
+                const checkSql = 'SELECT * FROM user_ WHERE user_nickname = ? OR user_email = ?';
 
                 // execute the query
                 dbconnect.query(checkSql, [nickname, email], (error, results) => {
@@ -240,7 +244,7 @@ app.post('/adduser', authToken, isAdmin, upload.single('avatar_file'), (req, res
 
 
                     //  If not then prepare and execute the SQL query
-                    const sql = `INSERT INTO user (user_firstname, user_lastname,  user_pseudo, user_role, user_email, user_password, user_avatar, user_role_name, statement) 
+                    const sql = `INSERT INTO user_ (user_firstname, user_lastname,  user_nickname, user_role, user_email, user_password, user_avatar, user_role_name, user_isActivated) 
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
                     // execute the query
@@ -306,7 +310,7 @@ app.delete('/deleteuser/:id', authToken, isAdmin, (req, res) => {
         } else {
 
             //  If not then prepare the SQL query to ask if the ID exist
-            const sql = 'SELECT id FROM user WHERE id = ?';
+            const sql = 'SELECT id FROM user_ WHERE id = ?';
 
             // execute  the query
             connection.query(sql, [id], (error, results) => {
@@ -327,7 +331,7 @@ app.delete('/deleteuser/:id', authToken, isAdmin, (req, res) => {
                     } else {
 
                         // Prepare the next request
-                        const sqlDelete = 'DELETE FROM user WHERE id = ?';
+                        const sqlDelete = 'DELETE FROM user_ WHERE id = ?';
 
                         // execute  the query
                         connection.query(sqlDelete, [id], (error, results) => {
@@ -456,7 +460,7 @@ app.put('/modifyuser/:id', authToken, isAdmin, upload.single('new_avatar_file'),
                 }
 
                 // Get old informations from this user :
-                const oldDatasSql = "SELECT * FROM user WHERE id = ?";
+                const oldDatasSql = "SELECT * FROM user_ WHERE id = ?";
 
                 // execute the query
                 dbconnect.query(oldDatasSql, [id], (error, oldResults) => {
@@ -469,7 +473,7 @@ app.put('/modifyuser/:id', authToken, isAdmin, upload.single('new_avatar_file'),
                     } else {
 
                         // If not then compare if new datas are not exists in old datas exept old datas from the actual user on the way to be modified
-                        const compareResultsSql = "SELECT * FROM user WHERE user_pseudo != ? OR user_email != ? HAVING user_pseudo = ? OR user_email = ?";
+                        const compareResultsSql = "SELECT * FROM user_ WHERE user_nickname != ? OR user_email != ? HAVING user_nickname = ? OR user_email = ?";
                       
                         // execute the query
                         dbconnect.query(compareResultsSql, [oldResults[0].user_pseudo, oldResults[0].user_email, new_nickname, new_email], (error, compareResultsSql) => {
@@ -488,11 +492,11 @@ app.put('/modifyuser/:id', authToken, isAdmin, upload.single('new_avatar_file'),
                             // Not any errors ? unique datas don't exists at other users ... then prepare and execute the SQL query
 
                             // choose the request depending if a new avatard is sent
-                            const sql = new_file_included ?  "UPDATE user SET user_firstname = ?, user_lastname = ?, user_pseudo = ?, user_role = ?, user_email = ?, user_avatar = ?, user_role_name = ?, statement = ? WHERE id = ?" :
-                            "UPDATE user SET user_firstname = ?, user_lastname = ?, user_pseudo = ?, user_role = ?, user_email = ?, user_role_name = ?, statement = ? WHERE id = ?";
+                            const sql = new_file_included ?  "UPDATE user_ SET user_firstname = ?, user_lastname = ?, user_nickname = ?, user_role = ?, user_email = ?, user_avatar = ?, user_role_name = ?, user_isActivated = ? WHERE id = ?" :
+                            "UPDATE user_ SET user_firstname = ?, user_lastname = ?, user_nickname = ?, user_role = ?, user_email = ?, user_role_name = ?, user_isActivated = ? WHERE id = ?";
                             
                             console.log("Requête SQL : ", sql)
-                            // const sql = "UPDATE user SET user_firstname = ?, user_lastname = ?, user_pseudo = ?, user_role = ?, user_email = ?, user_password = ?, user_avatar = ?, user_role_name = ?, statement = ? WHERE id = ?";
+                            // const sql = "UPDATE user SET user_firstname = ?, user_lastname = ?, user_nickname = ?, user_role = ?, user_email = ?, user_password = ?, user_avatar = ?, user_role_name = ?, statement = ? WHERE id = ?";
 
                             const sqlValues = new_file_included ? [new_firstname, new_lastname, new_nickname, new_role, new_email, new_avatar, new_role_name, new_statement, id] : 
                             [new_firstname, new_lastname, new_nickname, new_role, new_email, new_role_name, new_statement, id]
@@ -520,5 +524,7 @@ app.put('/modifyuser/:id', authToken, isAdmin, upload.single('new_avatar_file'),
         }
     });
 });
+
+
 
 module.exports = app;
