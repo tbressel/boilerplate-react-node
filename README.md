@@ -25,7 +25,7 @@ __1. API Rest__
 
 __Dossier ./server__
 
-Serveur Node JS / Express / Typescript
+Serveur Node JS / Express / Javascript (upgrade prevu en Typescript)
 
 * __npm run dev__ : démarrer le serveur en local
 
